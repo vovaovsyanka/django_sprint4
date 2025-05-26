@@ -29,7 +29,7 @@ def post_detail(request, id):
         raise Http404("Category not published")
 
     if (
-        (not post.is_published or post.pub_date > now) 
+        (not post.is_published or post.pub_date > now)
         and request.user != post.author
     ):
         raise Http404("Post not found")
