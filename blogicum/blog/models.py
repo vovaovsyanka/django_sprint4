@@ -18,15 +18,15 @@ class PublishedModel(models.Model):
         verbose_name='Добавлено'
     )
 
-    class Meta:
-        abstract = True
-    
     def __str__(self):
         if hasattr(self, 'title'):
             return self.title
         elif hasattr(self, 'name'):
             return self.name
         return super().__str__()
+
+    class Meta:
+        abstract = True
 
 
 class Category(PublishedModel):
@@ -42,7 +42,7 @@ class Category(PublishedModel):
     class Meta:
         verbose_name = 'категория'
         verbose_name_plural = 'Категории'
-    
+
     def __str__(self):
         return self.title
 
@@ -56,7 +56,7 @@ class Location(PublishedModel):
     class Meta:
         verbose_name = 'местоположение'
         verbose_name_plural = 'Местоположения'
-    
+
     def __str__(self):
         return self.name
 
