@@ -28,7 +28,10 @@ def post_detail(request, id):
     if not post.category.is_published and request.user != post.author:
         raise Http404("Category not published")
 
-    if (not post.is_published or post.pub_date > now) and request.user != post.author:
+    if (
+        (not post.is_published or post.pub_date > now) 
+        and request.user != post.author
+    ):
         raise Http404("Post not found")
 
     form = CommentForm()
