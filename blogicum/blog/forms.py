@@ -22,12 +22,10 @@ class PostForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['pub_date'].input_formats = ['%Y-%m-%dT%H:%M']
 
-
 class CommentForm(forms.ModelForm):
     class Meta:
         model = Comment
         fields = ('text',)
-
 
 class UserEditForm(forms.ModelForm):
     class Meta:

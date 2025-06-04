@@ -4,33 +4,27 @@ from django.contrib.auth.forms import UserCreationForm
 from django.views.generic import CreateView
 from django.urls import reverse_lazy
 from django.contrib.auth import get_user_model
-from django.core.paginator import Paginator
-from django.db.models import Count
 from django.http import Http404
-from django.utils import timezone
 from .models import Category, Post, Comment
 from .forms import PostForm, CommentForm, UserEditForm
+from .functions import get_paginator, get_published_posts, get_published_posts_with_no_filter, comment_count, is_post_visible_to_user
 
-def get_paginator(request, queryset, per_page=10):
-    paginator = Paginator(queryset, per_page)
-    page_number = request.GET.get('page')
-    return paginator.get_page(page_number)
 
 def index(request):
-    post_list = Post.objects.published().order_by('-pub_date')
+    post_list = get_published_posts_with_no_filter(Post.objects).order_by('-pub_date')
     page_obj = get_paginator(request, post_list)
     return render(request, 'blog/index.html', {'page_obj': page_obj})
 
+
 def post_detail(request, post_id):
     post = get_object_or_404(Post.objects.all(), pk=post_id)
-    now = timezone.now()
+    
     if not post.category.is_published and request.user != post.author:
         raise Http404("Category not published")
-    if (
-        (not post.is_published or post.pub_date > now)
-        and request.user != post.author
-    ):
+    
+    if not is_post_visible_to_user(post, request.user):
         raise Http404("Post not found")
+
     form = CommentForm()
     return render(
         request,
@@ -38,12 +32,13 @@ def post_detail(request, post_id):
         {'post': post, 'form': form, 'comments': post.comments.all()}
     )
 
+
 def category_posts(request, category_slug):
     category = get_object_or_404(
         Category.objects.filter(is_published=True),
         slug=category_slug
     )
-    post_list = Post.objects.published().filter(
+    post_list = get_published_posts_with_no_filter(Post.objects).filter(
         category=category
     ).order_by('-pub_date')
     page_obj = get_paginator(request, post_list)
@@ -53,24 +48,28 @@ def category_posts(request, category_slug):
         {'category': category, 'page_obj': page_obj}
     )
 
+
 class RegistrationView(CreateView):
     form_class = UserCreationForm
     template_name = 'registration/registration_form.html'
     success_url = reverse_lazy('blog:index')
 
+
 def profile(request, username):
     profile = get_object_or_404(get_user_model(), username=username)
-    post_list = profile.posts.order_by('-pub_date').annotate(
-        comment_count=Count('comments')
-    )
-    if request.user != profile:
-        post_list = post_list.filter(is_published=True)
+
+    if profile == request.user:
+        post_list = profile.posts.all()
+    else:
+        post_list = get_published_posts(profile.posts.all())
+
+    post_list = comment_count(post_list).order_by("-pub_date")
     page_obj = get_paginator(request, post_list)
     return render(
-        request,
-        'blog/profile.html',
-        {'profile': profile, 'page_obj': page_obj}
+        request, "blog/profile.html",
+        {"profile": profile, "page_obj": page_obj}
     )
+
 
 @login_required
 def edit_profile(request):
